@@ -1,0 +1,201 @@
+
+var Stream = require('stream')
+  , util = require('util')
+  , DEBUG = false
+  , debug
+
+if (DEBUG) debug = console.log
+else debug = function() {}
+
+module.exports = function(opts) {
+  return new Master(opts)
+}
+
+/*
+ * @api private
+ * @param {Object|undefined} opts
+*/
+function BufferedStream(opts) {
+  opts = opts || {}
+
+  Stream.call(this)
+
+  // up to subclasses to decide what kind of stream we are
+  this.writable = false
+  this.readable = false
+
+  this.buffers = []
+  this.paused = false
+  this.concat = !!opts.concat //boolean indicating if we should emit separate buffers or concat buffers into one 'emit' event
+}
+util.inherits(BufferedStream, Stream)
+
+BufferedStream.prototype.pause = function() {
+  debug('becoming paused')
+  this.paused = true
+}
+
+BufferedStream.prototype.resume = function() {
+  this.paused = false
+  var self = this
+  process.nextTick(function() {
+    self.unloadBuffers()
+  })
+}
+
+BufferedStream.prototype.unloadBuffers = function() {
+  if (this.paused) return
+
+  debug('BufferedStream: unloadBuffers')
+  if (this.concat) { //emit one big concatenated buffer
+    this.emit('data', Buffer.concat(this.buffers))
+    this.buffers = []
+    //debug('BufferedStream: emitting concat buffer')
+  } else { //emit each buffer in 'fifo' order
+    while (this.buffers.length && !this.paused) {
+      //debug('BufferedStream: emitting individual buffer')
+      this.emit('data', this.buffers.shift())
+    }
+  }
+}
+
+
+/*
+ * @param {Object|undefined} opts
+ *     {number} opts.bufSize  buffer size for the children streams. When their data surpasses this buffer limit, they will emit data
+ *
+ * @emits 'zeroChildren' event when all child streams have emmitted 'end'
+ *
+ * @inherits {BufferedStream => Stream}
+*/
+function Master(opts) {
+  opts = opts || {}
+
+  BufferedStream.call(this, {concat : opts.concat})
+
+  this.writable = false //call Master.child for writable stream
+  this.readable = true
+
+  //this.children = {}
+  this.bufSize = opts.bufSize || 1024 * 10 //10kb
+  this.numberOfChildren = 0
+
+  this.paused = false
+}
+util.inherits(Master, BufferedStream)
+
+Master.prototype.child = function() {
+  var child = new Child({concat : true, bufSize : this.bufSize})
+    , self = this
+    , ended
+
+  self.numberOfChildren += 1
+
+  ended = false
+
+  function onData(data) {
+    debug('on parent called inside master')
+    if (self.paused){
+      self.buffers.push(data)
+      debug('buffering child data')
+    } else {
+      debug('master emitting data')
+      self.emit('data', data)
+    }
+
+  }
+
+  function onEnd() {
+    debug('ended child stream')
+    cleanup()
+  }
+
+  function onError(e) {
+    debug(e)
+    self.emit('error', e)
+    cleanup()
+  }
+
+  function cleanup() {
+    if (ended) return
+
+    ended = true
+    self.numberOfChildren -= 1
+
+    debug('number of children in master-stream: %d', self.numberOfChildren)
+    if (self.numberOfChildren === 0) {
+      self.emit('zeroChildren') //good marker if you want multiple streams to finish before reading data from Master-stream
+    }
+    debug('cleanup method called')
+  }
+
+  child.once('end', onEnd)
+  child.once('error', onError)
+  child.on('data', onData)
+
+  return child
+}
+
+//child stream
+function Child(opts) {
+  opts = opts || {}
+  BufferedStream.call(this, {concat : opts.concat})
+
+  this.writable = true //call Master.child for writable stream
+  this.readable = true
+
+  this.bufSize = (opts.bufSize === Infinity || !opts.bufSize ? false : opts.bufSize) //max bytes before emitting
+  this.bufLength = 0 //bytes stored in buffer
+
+  this.hasEnded = false
+}
+
+util.inherits(Child, BufferedStream)
+
+Child.prototype.write = function(data) {
+  if (!Buffer.isBuffer(data)) data = new Buffer(data.toString())
+
+  this.buffers.push(data)
+  this.bufLength += data.length
+
+  this.unloadBuffers()
+
+  return !this.paused
+}
+
+Child.prototype.unloadBuffers = function() {
+  if (this.paused) return
+
+  var bigBuf
+    , cBuf
+
+  debug('unloading buffers in child')
+  //no bufferLimit or we have exceeded limit. If we have ended, also unload buffers
+  if (this.hasEnded || !this.bufSize || this.bufLength > this.bufSize) {
+    if (this.concat) { //emit a big buffer
+      bigBuf = Buffer.concat(this.buffers)
+      this.emit('data', bigBuf)
+      debug('emitting concat buffer data')
+      this.buffers = []
+      this.bufLength = 0
+    } else {
+      while (this.buffers.length && !this.paused) {
+        cBuf = this.buffers.shift()
+        this.bufLength -= cBuf.length
+        this.emit('data', cBuf)
+      }
+    }
+  }
+}
+
+Child.prototype.end = function(data) {
+  debug('end called in Child')
+  this.hasEnded = true
+
+  if (data) this.write(data)
+  else this.unloadBuffers() //else b/c write() calls unloadBuffers
+
+  this.emit('end')
+}
+
+

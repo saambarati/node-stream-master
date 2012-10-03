@@ -1,0 +1,22 @@
+{
+  "name": "stream-master",
+  "version": "0.0.0",
+  "description": "A stream that controls child-streams",
+  "main": "streamMaster.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies" : {
+    "request":"*",
+    "logStream" : "*"
+  },
+  "repository": "",
+  "keywords": [
+    "stream",
+    "streams",
+    "parent",
+    "child"
+  ],
+  "author": "saam barati <saambarati1@gmail.com>",
+  "license": "MIT"
+}
