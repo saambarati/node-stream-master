@@ -23,6 +23,7 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     //bufSize indicates how much data child streams should buffer before emmiting data. pass 0 for data to be emmited without buffering
     var master = require('stream-master')({bufSize:1024 * 5}) //returns a readable stream.
       , fs = require('fs')
+      , assert = require('assert')
 
     //each child stream emits data normally so you can just pipe the child as a single stream,
     //
@@ -32,8 +33,8 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     //
     //master doesn't emit data until its children emit data
 
-    var child1 = request('http://npmjs.org').pipe(master.child()) //child returns a readable/writable stream
-    child.pipe(fs.createWriteStream(fileName)) //child emits data from the 'request' pipe
+    var child1 = request('http://npmjs.org').pipe(master.child()) //child returns a readable/writable stream. it is essentially a passthrough stream for request('http://npmjs.org')
+    child1.pipe(fs.createWriteStream(fileName)) //child emits data from the 'request' pipe
     //same as:   request('http://saambarati.org/').pipe(master.child()).pipe(fs.createWriteStream(fileName))
 
     var child2 = request('http://nodejs.org').pipe(master.child())
@@ -45,9 +46,9 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     master.pipe(fs.createWriteStream(masterFile)) //master emits data of both child1 and child2 and child 3
 
     master.on('zeroChildren', function() {
-      //child1, child2, child3 have all emmitted end
+      //child1, child2, child3 have all emmitted 'end'
       console.log('all children in "master" have emitted end')
-      // assert(master.numberOfChildren === 0)
+      assert(master.numberOfChildren === 0)
     })
 
 

@@ -26,7 +26,9 @@ s3.pipe(master.child())
 count++
 
 //argument to child
-var s4 = master.child( request('http://github.com/saambarati') )
+var testRequestStream =  request('http://github.com/saambarati')
+var s4 = master.child( testRequestStream )
+assert(s4 === testRequestStream)
 //s4.pipe(process.stdout)
 count++
 
