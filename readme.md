@@ -12,7 +12,7 @@ if you want all your child streams to finish before doing something else with th
 
 ### API
 
-`var master = require('stream-master')` master is a readable stream in this case, not writable.
+`var master = require('stream-master')(opts)` master is a readable stream in this case, not writable.
 stream-master `exports` a single function that takes an options object as an argument.
 `opts.bufSize` is the  buffer size for the children streams of stream-master (when not passed an argument to the `child` function).
 When child streams surpass this buffer limit, they will emit the buffered data. stream-master also has the property
@@ -24,11 +24,12 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     var master = require('stream-master')({bufSize:1024 * 5}) //returns a readable stream.
       , fs = require('fs')
 
-    //each child stream emits data normally, but buffers data to notify parent of incoming data
-    //parent doesn't emit data until a child stream has buffed max limit or has ended
+    //each child stream emits data normally, but buffers data to notify parent (and other streams) of incoming data
+    //children don't emit data until the max buffer limit or has been exceeded or it has been ended.
+    //consequently, master doesn't emit data until its children emit data
 
     var child1 = request('http://npmjs.org').pipe(master.child()) //child returns a readable/writable stream
-    child.pipe(fs.createWriteStream(fileName) //child emits data from the 'request' pipe
+    child.pipe(fs.createWriteStream(fileName)) //child emits data from the 'request' pipe
     //same as:   request('http://saambarati.org/').pipe(master.child()).pipe(fs.createWriteStream(fileName))
 
     var child2 = request('http://nodejs.org').pipe(master.child())
