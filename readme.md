@@ -24,9 +24,13 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     var master = require('stream-master')({bufSize:1024 * 5}) //returns a readable stream.
       , fs = require('fs')
 
-    //each child stream emits data normally, but buffers data to notify parent (and other streams) of incoming data
-    //children don't emit data until the max buffer limit or has been exceeded or it has been ended.
-    //consequently, master doesn't emit data until its children emit data
+    //each child stream emits data normally so you can just pipe the child as a single stream,
+    //
+    //instances of {Child} (the stream returned from master.child() when no argument is passed in) buffer data according to master.bufSize
+    //children don't emit data until the max buffer limit has been exceeded or it has been ended.
+    //to not have children buffer data, set master.bufSize to 0
+    //
+    //master doesn't emit data until its children emit data
 
     var child1 = request('http://npmjs.org').pipe(master.child()) //child returns a readable/writable stream
     child.pipe(fs.createWriteStream(fileName)) //child emits data from the 'request' pipe

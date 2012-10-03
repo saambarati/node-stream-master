@@ -8,9 +8,9 @@ var master = require('./streamMaster')()
 //each child stream emits data normally, but buffers data to notify parent of incoming data
 //parent doesn't emit data until a child stream has buffed max limit or has ended
 
-master.pause()
 
 var count = 0
+//master.bufSize = 0 //this will make children not buffer data
 
 //test the case of many child streams
 var s1 = request('http://saambarati.org/')
@@ -24,6 +24,12 @@ count++
 var s3 = request('http://github.com')
 s3.pipe(master.child())
 count++
+
+//argument to child
+var s4 = master.child( request('http://github.com/saambarati') )
+//s4.pipe(process.stdout)
+count++
+
 
 var cleanCalled = false
 function clean() {
@@ -41,15 +47,16 @@ s3.once('end', clean)
 var dataEmits = 0
 master.on('data', function(data) {
   dataEmits += 1
-  console.log('data emits: %d', dataEmits)
+  console.log('number of time master has emitted data: %d', dataEmits)
   console.log(data)
 })
 
 var zeroChildrenEmitted = false
+//master.pause()
 master.once('zeroChildren', function() {
   zeroChildrenEmitted = true
 
-  assert(master.paused)
+  //assert(master.paused)
   master.resume()
   assert(!master.paused)
   assert(master.numberOfChildren === 0)
@@ -72,7 +79,7 @@ process.on('exit', function() {
   assert(zeroChildrenEmitted)
   assert(master2Data === fs.readFileSync(fn, 'utf8'))
   fs.unlinkSync(fn)
-  console.log('process exiting, all tests have passed')
+  console.log('\n\nProcess exiting, all tests have passed')
 })
 
 
