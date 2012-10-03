@@ -1,7 +1,9 @@
 
 var master = require('./streamMaster')()
+  , master2 = require('./streamMaster')()
   , request = require('request')
   , assert = require('assert')
+  , fs = require('fs')
 
 //each child stream emits data normally, but buffers data to notify parent of incoming data
 //parent doesn't emit data until a child stream has buffed max limit or has ended
@@ -10,6 +12,7 @@ master.pause()
 
 var count = 0
 
+//test the case of many child streams
 var s1 = request('http://saambarati.org/')
 s1.pipe(master.child())
 count++
@@ -24,6 +27,7 @@ count++
 
 var cleanCalled = false
 function clean() {
+  //make sure end is called in proportion to the number of children master has
   cleanCalled = true
   count-=1
   assert(count === master.numberOfChildren)
@@ -32,6 +36,7 @@ function clean() {
 s1.once('end', clean)
 s2.once('end', clean)
 s3.once('end', clean)
+
 
 var dataEmits = 0
 master.on('data', function(data) {
@@ -50,11 +55,26 @@ master.once('zeroChildren', function() {
   assert(master.numberOfChildren === 0)
 })
 
+
+//test for the case of an argument being passed to to stream-master.child()
+var fn = './test_child_stream'
+  , master2Data = ''
+
+master2.child(master) //master2 will listen to data events from master 1
+master2.pipe(fs.createWriteStream(fn))
+master2.on('data', function(d) {
+  master2Data += d.toString()
+})
+
+
 process.on('exit', function() {
   assert(cleanCalled)
   assert(zeroChildrenEmitted)
+  assert(master2Data === fs.readFileSync(fn, 'utf8'))
+  fs.unlinkSync(fn)
   console.log('process exiting, all tests have passed')
 })
+
 
 
 

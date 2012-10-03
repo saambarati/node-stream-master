@@ -7,6 +7,15 @@ var Stream = require('stream')
 if (DEBUG) debug = console.log
 else debug = function() {}
 
+
+/*
+ * @param opts {object}
+ *     {number} opts.bufSize
+ *        (buffer size for the child() streams. When the data surpasses this buffer limit, they will emit data. When bufSize === 0, streams just emit data)
+ *
+ * @return {Master}
+ *   (returns a Master stream. Master streams are readable but not writable stream instances)
+*/
 module.exports = function(opts) {
   return new Master(opts)
 }
@@ -84,10 +93,19 @@ function Master(opts) {
 }
 util.inherits(Master, BufferedStream)
 
-Master.prototype.child = function() {
-  var child = new Child({concat : true, bufSize : this.bufSize})
-    , self = this
+/**
+ * @api public
+ *
+ * @param {stream|null}
+ *       if  a stream is passed as the argument, then the child stream will be the passed in stream, else, it will be an instance of {Child}
+ *
+*/
+Master.prototype.child = function(stream) {
+  var self = this
+    , child = ( stream ? stream : new Child({concat : true, bufSize : this.bufSize}) )
     , ended
+
+  if (!child.readable) console.warn('Warning in stream-master: child stream should be a "readable" stream or else it serves no use being in stream-master')
 
   self.numberOfChildren += 1
 
@@ -102,7 +120,6 @@ Master.prototype.child = function() {
       debug('master emitting data')
       self.emit('data', data)
     }
-
   }
 
   function onEnd() {
