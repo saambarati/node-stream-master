@@ -1,10 +1,10 @@
 
 var Stream = require('stream')
   , util = require('util')
-  , DEBUG = process && process.env && process.env.DEBUG
+  , _DEBUG = process && process.env && process.env.DEBUG
   , debug
 
-if (DEBUG) debug = function() { console.log.apply(console, ['DEBUG: '].concat(Array.prototype.slice.apply(arguments)) ) }
+if (_DEBUG) debug = function() { console.log.apply(console, ['DEBUG: '].concat([].slice.apply(arguments)) ) }
 else debug = function() {}
 
 
