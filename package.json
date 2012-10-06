@@ -1,6 +1,6 @@
 {
   "name": "stream-master",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A stream that controls child streams",
   "main": "streamMaster.js",
   "scripts": {
