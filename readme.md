@@ -18,6 +18,10 @@ stream-master `exports` a single function that takes an options object as an arg
 When child streams surpass this buffer limit, they will emit the buffered data. stream-master also has the property
 `numberOfChildren` which indicates the number of childs streams it's listening on `data` events for.
 
+Possible arguments to the `child` function are either a readable stream or a number representing the `bufSize` of that child stream.
+If it is a number, that child stream will buffer that many bytes before emitting data. Pass in zero for no buffering. If you pass in no
+arguments, then a child stream is returned that buffers data for as many bytes as the master's `bufSize`.
+
 #### `child` function ... and usage
 
     //bufSize indicates how much data child streams should buffer before emmiting data. pass 0 for data to be emmited without buffering
@@ -43,7 +47,7 @@ When child streams surpass this buffer limit, they will emit the buffered data. 
     var child3 = master.child( request('http://github.com') ) // child3 === request('http://github.com')
     child3.pipe(process.stdout)
 
-    master.pipe(fs.createWriteStream(masterFile)) //master emits data of both child1 and child2 and child 3
+    master.pipe( fs.createWriteStream(masterFile) ) //master emits data of both child1 and child2 and child 3
 
     master.on('zeroChildren', function() {
       //child1, child2, child3 have all emmitted 'end'

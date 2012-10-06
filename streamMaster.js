@@ -100,11 +100,14 @@ util.inherits(Master, BufferedStream)
  *       if  a stream is passed as the argument, then the child stream will be the passed in stream, else, it will be an instance of {Child}
  *
 */
-Master.prototype.child = function(stream) {
+Master.prototype.child = function(streamOrBufSize) {
   var self = this
-    , child = ( stream ? stream : new Child({concat : true, bufSize : this.bufSize}) )
+    , child
     , ended
 
+  child = ( typeof stream !== 'number' && streamOrBufSize ? streamOrBufSize
+            : new Child({concat : true, bufSize : (typeof streamOrBufSize === 'number' ? streamOrBufSize : this.bufSize) }) //if stream is a number, make it the bufSize
+          )
   if (!child.readable) console.warn('Warning in stream-master: child stream should be a "readable" stream or else it serves no use being in stream-master')
 
   self.numberOfChildren += 1
@@ -161,7 +164,7 @@ function Child(opts) {
   this.writable = true //call Master.child for writable stream
   this.readable = true
 
-  this.bufSize = (opts.bufSize === Infinity || !opts.bufSize ? false : opts.bufSize) //max bytes before emitting
+  this.bufSize = (opts.bufSize === Infinity || !opts.bufSize ? 0 : opts.bufSize) //max bytes before emitting
   this.bufLength = 0 //bytes stored in buffer
 
   this.hasEnded = false

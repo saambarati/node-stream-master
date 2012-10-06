@@ -29,8 +29,13 @@ count++
 var testRequestStream =  request('http://github.com/saambarati')
 var s4 = master.child( testRequestStream )
 assert(s4 === testRequestStream)
-//s4.pipe(process.stdout)
+s4.pipe(process.stdout)
 count++
+
+var s5 = master.child(0)
+assert(s5.bufSize === 0)
+count++
+s5.write('not buffering the 5th stream')
 
 
 var cleanCalled = false
@@ -44,7 +49,10 @@ function clean() {
 s1.once('end', clean)
 s2.once('end', clean)
 s3.once('end', clean)
+s4.once('end', clean)
+s5.once('end', clean)
 
+s5.end()
 
 var dataEmits = 0
 master.on('data', function(data) {
