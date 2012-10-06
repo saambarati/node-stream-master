@@ -29,7 +29,7 @@ count++
 var testRequestStream =  request('http://github.com/saambarati')
 var s4 = master.child( testRequestStream )
 assert(s4 === testRequestStream)
-s4.pipe(process.stdout)
+//s4.pipe(process.stdout)
 count++
 
 var s5 = master.child(0)
@@ -58,7 +58,7 @@ var dataEmits = 0
 master.on('data', function(data) {
   dataEmits += 1
   console.log('number of time master has emitted data: %d', dataEmits)
-  console.log(data)
+  //console.log(data)
 })
 
 var zeroChildrenEmitted = false

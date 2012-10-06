@@ -1,10 +1,10 @@
 
 var Stream = require('stream')
   , util = require('util')
-  , DEBUG = false
+  , DEBUG = process && process.env && process.env.DEBUG
   , debug
 
-if (DEBUG) debug = console.log
+if (DEBUG) debug = function() { console.log.apply(console, ['DEBUG: '].concat(Array.prototype.slice.apply(arguments)) ) }
 else debug = function() {}
 
 
@@ -174,12 +174,17 @@ util.inherits(Child, BufferedStream)
 
 Child.prototype.write = function(data) {
   if (!Buffer.isBuffer(data)) {
-    //maintain copy properties from data to buffer
-    var buf = new Buffer(data.toString())
-    Object.getOwnPropertyNames(data).forEach(function(prop) {
-      if (!buf[prop]) buf[prop] = data[prop]
-    })
-    data = bufWithProps
+    //copy properties from data to buffer
+    var buf
+    if (typeof data === 'object') { //Object.getOwnPropertyNames can only be called on objects
+      buf = new Buffer(data.toString())
+      Object.getOwnPropertyNames(data).forEach(function(prop) {
+        if (!buf[prop]) buf[prop] = data[prop]
+      })
+    } else {
+      buf = new Buffer(data.toString())
+    }
+    data = buf
   }
 
   this.buffers.push(data)
