@@ -173,7 +173,13 @@ function Child(opts) {
 util.inherits(Child, BufferedStream)
 
 Child.prototype.write = function(data) {
-  if (!Buffer.isBuffer(data)) data = new Buffer(data.toString())
+  if (!Buffer.isBuffer(data)) {
+    var bufWithProps = new Buffer(data.toSting())
+    Object.getOwnPropertyNames(data).forEach(function(prop) {
+      bufWithProps[prop] = data[prop]
+    })
+    data = bufWithProps
+  }
 
   this.buffers.push(data)
   this.bufLength += data.length

@@ -1,14 +1,13 @@
 {
   "name": "stream-master",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A stream that controls child streams",
   "main": "streamMaster.js",
   "scripts": {
     "test": "node ./test.js"
   },
   "devDependencies" : {
-    "request":"*",
-    "logStream" : "*"
+    "request":"*"
   },
   "repository"   :
   {
