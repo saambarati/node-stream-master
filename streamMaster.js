@@ -175,7 +175,7 @@ util.inherits(Child, BufferedStream)
 Child.prototype.write = function(data) {
   if (!Buffer.isBuffer(data)) {
     //maintain copy properties from data to buffer
-    var buf = new Buffer(data.toSting())
+    var buf = new Buffer(data.toString())
     Object.getOwnPropertyNames(data).forEach(function(prop) {
       if (!buf[prop]) buf[prop] = data[prop]
     })
